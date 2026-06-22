@@ -1,0 +1,5 @@
+package github.com/sjqtentacles/sml-geo
+
+require {
+  github.com/sjqtentacles/sml-json
+}
