@@ -38,6 +38,13 @@ Pure Standard ML using only the Basis library (plus the vendored
 `sml-json`) -- no FFI, no threads. Verified on **MLton** and **Poly/ML**,
 with identical, deterministic output across both.
 
+Integer JSON values (e.g. a large integer feature `id` or an integer
+coordinate) carry arbitrary precision: `sml-json`'s `JInt` holds an
+`IntInf.int`, and geo widens coordinates via `Real.fromLargeInt` and
+stringifies ids via `IntInf.toString`. Values past a fixed-width `int`
+(32-bit on MLton, 63-bit on Poly/ML) parse losslessly instead of raising
+`Overflow`.
+
 ## Building and testing
 
 ```sh

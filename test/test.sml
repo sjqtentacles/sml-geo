@@ -181,6 +181,36 @@ struct
       (* Top-level array (not an object) -> Err. *)
       val arrJson = "[1,2,3]"
       val () = checkErr ("top-level array fails", arrJson)
+
+      val () = section "large integers (arbitrary precision)"
+
+      (* Regression for the sml-json AST change: `JInt` now carries an
+         arbitrary-precision `IntInf.int`. Integer JSON numbers flowing through
+         geo's public parser must no longer overflow a fixed-width `int`
+         (32-bit on MLton, 63-bit on Poly/ML). *)
+
+      (* (1) Integer coordinates past 2^31 reach `parseNum`, which widens with
+         `Real.fromLargeInt`. Under the old `Real.fromInt` this raised Overflow
+         on MLton's 32-bit `int`. 3000000000 = 3e9 > 2^31, and its exact `real`
+         value is representable, so we can assert it round-trips through a
+         double. *)
+      val bigCoordJson =
+          "{\"type\":\"Point\",\"coordinates\":[3000000000,0]}"
+      val () = checkOk ("large integer coordinate parses", bigCoordJson,
+             fn Geometry (Point [lon, lat]) =>
+                  Real.== (lon, 3000000000.0) andalso Real.== (lat, 0.0)
+              | _ => false)
+
+      (* (2) A large integer feature `id` reaches the `IntInf.toString` arm.
+         9999999999999999999 > 2^63, so it exceeds BOTH MLton's and Poly/ML's
+         fixed-width `int`; only arbitrary precision preserves it losslessly. *)
+      val bigIdJson =
+          "{\"type\":\"Feature\",\"id\":9999999999999999999," ^
+          "\"geometry\":null,\"properties\":{}}"
+      val () = checkOk ("large integer id stringifies losslessly", bigIdJson,
+             fn Feat (Feature {id = SOME s, ...}) =>
+                  s = "9999999999999999999"
+              | _ => false)
     in
       ()
     end

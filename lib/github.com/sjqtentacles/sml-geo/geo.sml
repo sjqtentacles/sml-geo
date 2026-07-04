@@ -53,10 +53,13 @@ struct
             end
         | _ => raise Fail "position must be an array"
 
-  (* Parse a number (JInt or JReal) as a real. *)
+  (* Parse a number (JInt or JReal) as a real. `JInt` now carries an
+     arbitrary-precision `IntInf.int` (= `LargeInt.int`), so we widen with
+     `Real.fromLargeInt`, which never overflows -- unlike `Real.fromInt` on a
+     fixed-width `int` (32-bit on MLton, 63-bit on Poly/ML). *)
   and parseNum v =
       case v of
-          JInt n => Real.fromInt n
+          JInt n => Real.fromLargeInt n
         | JReal r => r
         | _ => raise Fail "expected a number"
 
@@ -143,7 +146,10 @@ struct
               val id =
                   case lookup (kvs, "id") of
                       SOME (JStr s) => SOME s
-                    | SOME (JInt n) => SOME (Int.toString n)
+                    (* `n` is now `IntInf.int` (arbitrary precision); stringify
+                       with `IntInf.toString` so large integer ids never
+                       overflow -- `Int.toString` would truncate/raise. *)
+                    | SOME (JInt n) => SOME (IntInf.toString n)
                     | SOME (JReal r) => SOME (Real.toString r)
                     | SOME _ => raise Fail "feature id must be string or number"
                     | NONE => NONE
