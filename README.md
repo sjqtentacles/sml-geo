@@ -84,6 +84,25 @@ val box = GeoJsonBbox.bbox (GeoJson.LineString [[0.0,0.0],[10.0,5.0],[3.0,8.0]])
 | `GeoJsonSerializer.toJson : t -> Json.json` | Serialize GeoJSON to a JSON value. |
 | `GeoJsonBbox.bbox : geometry -> real * real * real * real` | Bounding box of a geometry. |
 
+## Example
+
+`make example` builds and runs [`examples/demo.sml`](examples/demo.sml), which
+builds typed geometries, serializes/parses a point and a feature through the
+vendored sml-json, computes bounding boxes, and shows the parser's error
+reporting on malformed coordinates (output is byte-identical under MLton and
+Poly/ML):
+
+```
+GeoJSON demo
+serialized point       = {"type":"Point","coordinates":[-1.2241940000000000e2,3.7774900000000002e1]}
+round-trip point       = lon ~122.4194, lat 37.7749
+triangle bbox           = [0.0000, 0.0000, 4.0000, 4.0000]
+collection bbox         = [~122.4194, 0.0000, 4.0000, 37.7749]
+serialized feature      = {"id":"city-1","type":"Feature","geometry":{"type":"Point","coordinates":[-1.2241940000000000e2,3.7774900000000002e1]},"properties":{"name":"San Francisco"}}
+round-trip feature id   = city-1
+bad point               = Err "position must be an array"
+```
+
 ## Dependencies
 
 - [`sml-json`](https://github.com/sjqtentacles/sml-json) (vendored, which
