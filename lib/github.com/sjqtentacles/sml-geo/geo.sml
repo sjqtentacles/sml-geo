@@ -7,6 +7,33 @@ structure GeoJson :> GEO =
 struct
   type pos = real list
 
+  (* Deterministic real formatting: Real.toString differs between MLton and
+     Poly/ML (e.g. "30" vs "30.0"). Searches Real.fmt FIX(0), FIX(1), ... for
+     the first fixed-decimal rendering that reparses to the same real
+     (Real.fmt is byte-identical across both compilers); falls back to
+     scientific notation past 15 fixed digits. *)
+  fun fmtRealDet (r : real) : string =
+    if Real.isNan r then "nan"
+    else if Real.== (r, Real.posInf) then "inf"
+    else if Real.== (r, Real.negInf) then "~inf"
+    else
+      let
+        val neg = r < 0.0
+        val a = Real.abs r
+        fun tryDigits n =
+          if n > 15 then NONE
+          else
+            let val s = Real.fmt (StringCvt.FIX (SOME n)) a
+            in case Real.fromString s of
+                   SOME a' => if Real.== (a', a) then SOME s else tryDigits (n + 1)
+                 | NONE => tryDigits (n + 1)
+            end
+        val body =
+          case tryDigits 0 of
+              SOME s => s
+            | NONE => Real.fmt (StringCvt.SCI (SOME 16)) a
+      in if neg then "~" ^ body else body end
+
   datatype geometry =
       Point of pos
     | MultiPoint of pos list
@@ -150,7 +177,7 @@ struct
                        with `IntInf.toString` so large integer ids never
                        overflow -- `Int.toString` would truncate/raise. *)
                     | SOME (JInt n) => SOME (IntInf.toString n)
-                    | SOME (JReal r) => SOME (Real.toString r)
+                    | SOME (JReal r) => SOME (fmtRealDet r)
                     | SOME _ => raise Fail "feature id must be string or number"
                     | NONE => NONE
             in

@@ -211,6 +211,16 @@ struct
              fn Feat (Feature {id = SOME s, ...}) =>
                   s = "9999999999999999999"
               | _ => false)
+
+      (* (3) A real-valued feature `id` reaches the JReal arm, stringified via
+         a deterministic fixed-decimal formatter, not Real.toString (which
+         MLton and Poly/ML render differently, e.g. "30" vs "30.0"). *)
+      val realIdJson =
+          "{\"type\":\"Feature\",\"id\":0.001," ^
+          "\"geometry\":null,\"properties\":{}}"
+      val () = checkOk ("real id stringifies deterministically", realIdJson,
+             fn Feat (Feature {id = SOME s, ...}) => s = "0.001"
+              | _ => false)
     in
       ()
     end
